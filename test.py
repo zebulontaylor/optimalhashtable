@@ -1,5 +1,5 @@
 from math import log2, ceil, floor
-from random import randint
+from random import randint, sample
 
 delta = 0.2
 n = 2**8
@@ -87,42 +87,47 @@ class OptimalHashtable:
             # Do table 1
             j = 1
             while True:
-                if self.tables[0].probe_empty(hphi(batch_no, j, value)):
-                    self.tables[0].insert(hphi(batch_no, j, value), value)
-                    return (batch_no, hphi(batch_no, j, value), j)
+                slot = hphi(batch_no, j, value) % self.tables[0].size
+                if self.tables[0].probe_empty(slot):
+                    self.tables[0].insert(slot, value)
+                    return (batch_no, slot, j)
                 j += 1
 
         if e1 > delta / 2 and e2 > 0.25:
             # Try table 1 first up to f(e1), then try table 2
             for j in range(1, self.f(e1)):
-                if table1.probe_empty(hphi(batch_no-1, j, value)):
-                    table1.insert(hphi(batch_no-1, j, value), value)
-                    return (batch_no-1, hphi(batch_no-1, j, value), j)
+                slot = hphi(batch_no-1, j, value) % table1.size
+                if table1.probe_empty(slot):
+                    table1.insert(slot, value)
+                    return (batch_no-1, slot, j)
             j = 1
-            print(f"failed to insert to table 1 using {f(e1)} probes")
+            print(f"failed to insert to table 1 using {self.f(e1)} probes")
             while True:
-                if table2.probe_empty(hphi(batch_no, j, value)):
-                    table2.insert(hphi(batch_no, j, value), value)
-                    return (batch_no, hphi(batch_no, j, value), j+f(e1))
+                slot = hphi(batch_no, j, value) % table2.size
+                if table2.probe_empty(slot):
+                    table2.insert(slot, value)
+                    return (batch_no, slot, j+self.f(e1))
                 j += 1
         elif e1 <= delta / 2:
             # Do table 2
             j = 1
             while True:
-                if table2.probe_empty(hphi(batch_no, j, value)):
-                    table2.insert(hphi(batch_no, j, value), value)
-                    return (batch_no, hphi(batch_no, j, value), j)
+                slot = hphi(batch_no, j, value) % table2.size
+                if table2.probe_empty(slot):
+                    table2.insert(slot, value)
+                    return (batch_no, slot, j)
                 j += 1
         else: # e2 <= 0.25
             # Do table 1
             j = 1
             while True:
-                if table1.probe_empty(hphi(batch_no-1, j, value)):
-                    table1.insert(hphi(batch_no-1, j, value), value)
-                    return (batch_no-1, hphi(batch_no-1, j, value), j)
+                slot = hphi(batch_no-1, j, value) % table1.size
+                if table1.probe_empty(slot):
+                    table1.insert(slot, value)
+                    return (batch_no-1, slot, j)
                 j += 1
 
-    def search(self, value, j_depth=2):
+    def search(self, value, j_depth=3):
         for i in range(ceil(log2(1/delta))):
             for j in range(1, j_depth+1):
                 slot = hphi(i, j, value) % self.tables[i].size
@@ -141,21 +146,23 @@ class OptimalHashtable:
 ht = OptimalHashtable(n, delta)
 
 average_insertion_probes = 0
-
 insertion_count = 0
+
+values = sample(range(n * 10), int(n * (1 - delta)))
+
 for i in range(int(n * (1-delta))):
     insertion_count += 1
-    table_no, slot, probes = ht.insert(i)
-    #print(f"Inserted {i} in {probes} probes at table {table_no}, slot {slot} (batch {batch_no})")
+    table_no, slot, probes = ht.insert(values[i])
+    print(f"Inserted {values[i]} in {probes} probes at table {table_no}, slot {slot} (batch {ht.batch_no})")
     average_insertion_probes += probes
 
 average_search_probes = 0
 
 search_count = 0
-for i in range(10000):
-    num = randint(0, int(n * (1-delta))-1)
+for i in range(10):
+    num = values[randint(0, int(n * (1-delta))-1)]
     val, i, j, slot, idx = ht.search(num)
-    #print(f"Found {val} at table {i}, slot {slot}, in {idx+1} probes")
+    print(f"Found {val} at table {i}, slot {slot}, in {idx+1} probes")
     average_search_probes += idx
     search_count += 1
 

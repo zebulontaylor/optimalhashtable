@@ -41,7 +41,7 @@ assert sum(t.size for t in tables) == n
 
 phi = lambda i, j: int("".join("1" + b for b in bin(j)[2:]) + "0" + bin(i)[2:], 2)
 
-c = 10
+c = 20
 f = lambda epsilon: ceil(c * min(log2(1/epsilon)**2, log2(1/delta))) + 1
 
 p = 2**31-1
@@ -66,7 +66,7 @@ def insert_from_batch(batch_no, value):
 
     if batch_no == 0:
         # Do table 1
-        j = 0
+        j = 1
         while True:
             if table2.probe_empty(hphi(batch_no, j, value)):
                 table2.insert(hphi(batch_no, j, value), value)
@@ -75,11 +75,11 @@ def insert_from_batch(batch_no, value):
 
     if e1 > delta / 2 and e2 > 0.25:
         # Try table 1 first up to f(e1), then try table 2
-        for j in range(f(e1)):
+        for j in range(1, f(e1)):
             if table1.probe_empty(hphi(batch_no-1, j, value)):
                 table1.insert(hphi(batch_no-1, j, value), value)
                 return (batch_no-1, hphi(batch_no-1, j, value), j)
-        j = 0
+        j = 1
         print(f"failed to insert to table 1 using {f(e1)} probes")
         while True:
             if table2.probe_empty(hphi(batch_no, j, value)):
@@ -88,7 +88,7 @@ def insert_from_batch(batch_no, value):
             j += 1
     elif e1 <= delta / 2:
         # Do table 2
-        j = 0
+        j = 1
         while True:
             if table2.probe_empty(hphi(batch_no, j, value)):
                 table2.insert(hphi(batch_no, j, value), value)
@@ -96,7 +96,7 @@ def insert_from_batch(batch_no, value):
             j += 1
     else: # e2 <= 0.25
         # Do table 1
-        j = 0
+        j = 1
         while True:
             if table1.probe_empty(hphi(batch_no-1, j, value)):
                 table1.insert(hphi(batch_no-1, j, value), value)
@@ -106,13 +106,20 @@ def insert_from_batch(batch_no, value):
 ## SEARCHING
 valid_probes = []
 for i_idx in range(len(tables)):
-    for j_idx in range(1, 100):
-        cost = phi(i_idx, j_idx)
+    for j_idx in range(1, n):
+        cost = phi(i_idx+1, j_idx)
         valid_probes.append((cost, i_idx, j_idx))
 
 valid_probes.sort(key=lambda x: x[0])
 
 def search(value):
+    for i in range(ceil(log2(1/delta))):
+        for j in range(1, 5):
+            slot = hphi(i, j, value)
+            if tables[i].table[slot] == value:
+                return (value, i, j, slot, i*5 + j)
+
+    # If that fails, do exhaustive search
     for idx, (_, i, j) in enumerate(valid_probes):
         slot = hphi(i, j, value)
         if tables[i].table[slot] == value:
@@ -122,20 +129,22 @@ def search(value):
 batch_no = 0
 left_in_batch = get_batch_size(batch_no)
 
+average_insertion_probes = 0
+
 for i in range(int(n * (1-delta))):
     table_no, slot, probes = insert_from_batch(batch_no, i)
-    print(f"Inserted {i} in {probes} probes at table {table_no}, slot {slot} (batch {batch_no})")
+    #print(f"Inserted {i} in {probes} probes at table {table_no}, slot {slot} (batch {batch_no})")
+    average_insertion_probes += probes / (n * (1-delta))
     left_in_batch -= 1
     if left_in_batch == 0:
-        if batch_no > 0:
-            print(tables[batch_no-1].epsilon)
         batch_no += 1
         left_in_batch = get_batch_size(batch_no)
 
 for i in range(5):
     num = randint(0, int(n * (1-delta))-1)
-    print(num)
+    print(f"Searching for {num}")
     val, i, j, slot, idx = search(num)
     print(f"Found {val} at table {i}, slot {slot}, in {idx+1} probes")
 
+print(f"Average insertion probes: {average_insertion_probes:.3f}")
 print(tables)

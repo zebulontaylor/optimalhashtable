@@ -1,7 +1,7 @@
 from math import log2, ceil, floor
 from random import randint
 
-delta = 0.1
+delta = 0.2
 n = 2**8
 
 tables = []
@@ -36,7 +36,6 @@ for i in range(1, floor(log2(n)) + 1):
         length += 1
     tables.append(SubArray(length))
 
-print(tables)
 assert sum(t.size for t in tables) == n
 
 phi = lambda i, j: int("".join("1" + b for b in bin(j)[2:]) + "0" + bin(i)[2:], 2)
@@ -68,8 +67,8 @@ def insert_from_batch(batch_no, value):
         # Do table 1
         j = 1
         while True:
-            if table2.probe_empty(hphi(batch_no, j, value)):
-                table2.insert(hphi(batch_no, j, value), value)
+            if tables[0].probe_empty(hphi(batch_no, j, value)):
+                tables[0].insert(hphi(batch_no, j, value), value)
                 return (batch_no, hphi(batch_no, j, value), j)
             j += 1
 
@@ -112,12 +111,14 @@ for i_idx in range(len(tables)):
 
 valid_probes.sort(key=lambda x: x[0])
 
+j_depth = 2
+
 def search(value):
     for i in range(ceil(log2(1/delta))):
-        for j in range(1, 5):
+        for j in range(1, j_depth+1):
             slot = hphi(i, j, value)
             if tables[i].table[slot] == value:
-                return (value, i, j, slot, i*5 + j)
+                return (value, i, j, slot, i*j_depth + j)
 
     # If that fails, do exhaustive search
     for idx, (_, i, j) in enumerate(valid_probes):
@@ -131,20 +132,26 @@ left_in_batch = get_batch_size(batch_no)
 
 average_insertion_probes = 0
 
+insertion_count = 0
 for i in range(int(n * (1-delta))):
+    insertion_count += 1
     table_no, slot, probes = insert_from_batch(batch_no, i)
     #print(f"Inserted {i} in {probes} probes at table {table_no}, slot {slot} (batch {batch_no})")
-    average_insertion_probes += probes / (n * (1-delta))
+    average_insertion_probes += probes
     left_in_batch -= 1
     if left_in_batch == 0:
         batch_no += 1
         left_in_batch = get_batch_size(batch_no)
 
-for i in range(5):
-    num = randint(0, int(n * (1-delta))-1)
-    print(f"Searching for {num}")
-    val, i, j, slot, idx = search(num)
-    print(f"Found {val} at table {i}, slot {slot}, in {idx+1} probes")
+average_search_probes = 0
 
-print(f"Average insertion probes: {average_insertion_probes:.3f}")
-print(tables)
+search_count = 0
+for i in range(10000):
+    num = randint(0, int(n * (1-delta))-1)
+    val, i, j, slot, idx = search(num)
+    #print(f"Found {val} at table {i}, slot {slot}, in {idx+1} probes")
+    average_search_probes += idx
+    search_count += 1
+
+print(f"Average insertion probes: {average_insertion_probes / insertion_count:.3f}")
+print(f"Average search probes: {average_search_probes / search_count:.3f}")

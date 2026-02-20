@@ -2,9 +2,7 @@ import elastic
 import naive
 from random import sample, randint
 
-def run_test(insert, search, n, delta, num_searches=10000):
-    values = sample(range(n * 10), int(n * (1 - delta)))
-
+def run_test(insert, search, n, delta, values, num_searches=10000):
     average_insertion_probes = 0
     insertion_count = 0
 
@@ -32,11 +30,12 @@ def run_test(insert, search, n, delta, num_searches=10000):
 
 if __name__ == "__main__":
     delta = 0.05
-    n = 2**11
+    n = 2**13
+    values = sample(range(n * 10), int(n * (1 - delta)))
     eht = elastic.ElasticHashtable(n, delta)
     nht = naive.NaiveHashtable(n, delta)
     print(f"Using delta={delta}, n={n}")
     print("=== Elastic Hashtable ===")
-    run_test(eht.insert, eht.search, n, delta)
+    run_test(eht.insert, eht.search, n, delta, values)
     print("=== Naive Hashtable ===")
-    run_test(nht.insert, nht.search, n, delta)
+    run_test(nht.insert, nht.search, n, delta, values)

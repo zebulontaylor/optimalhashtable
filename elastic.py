@@ -35,7 +35,7 @@ phi = lambda i, j: int("".join("1" + b for b in bin(j)[2:]) + "0" + bin(i)[2:], 
 hphi = lambda i, j, value: ((a*phi(i, j) + value) % p)
 
 class ElasticHashtable:
-    def __init__(self, n, delta, c=20):
+    def __init__(self, n, delta, c=1.0):
         self.n = n
         self.delta = delta
         self.batch_no = 0
@@ -121,20 +121,11 @@ class ElasticHashtable:
                     return (batch_no-1, slot, j)
                 j += 1
 
-    def search(self, value, j_depth=0):
-        for i in range(ceil(log2(1/self.delta))):
-            for j in range(1, j_depth+1):
-                slot = hphi(i, j, value) % self.tables[i].size
-                if self.tables[i][slot] == value:
-                    return (value, i, j, slot, i*j_depth + j)
-
-        prev_count = i*j_depth
-
-        # If that fails, do exhaustive search
+    def search(self, value):
         for idx, (_, i, j) in enumerate(self.valid_probes):
             slot = hphi(i, j, value) % self.tables[i].size
             if self.tables[i][slot] == value:
-                return (value, i, j, slot, idx+prev_count)
+                return (value, i, j, slot, idx + 1)
         return None
 
 if __name__ == "__main__":

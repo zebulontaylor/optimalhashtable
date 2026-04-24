@@ -41,3 +41,13 @@ The main part of the file, `ElasticHashtable` implements the core of the algorit
 ## Findings
 
 ![graph](graph.png)
+
+I (roughly) tuned the parameters of the elastic hash for this test, so I think that this is representative of a somewhat optimized implementation.
+
+Some things of note:
+
+1. While naive insertions and searches are identical (they are literally the same operation), elastic insertions and searches differ *drastically*. This is because, while the insertion is very efficient by spreading across multiple sub-arrays, the serches have to then probe all of those sub-arrays, resulting in somewhat high probes per operation.
+
+2. The elastic operations scale much better to extremely full hashtables. The crossover happens (for search) at around `1/delta = 40` => `table is 97.5% full`. While it's impressive how smooth it grows (it grows logarithmically), I'm not sure how practical this actually is, because just increasing your table size by 5% would trivially make naive more efficient (with much less complexity, too).
+
+3. There is a lot of noise for the naive methods at the very full hashsets because it becomes very luck-dependent of whether an operation will take 20 probes or 200. This may be a more compelling use case for elastic hashing because its operations are closer to constant-time and predictable (although, I should note, are NOT constant time or bounded in any meaningful way).

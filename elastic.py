@@ -35,7 +35,7 @@ phi = lambda i, j: int("".join("1" + b for b in bin(j)[2:]) + "0" + bin(i)[2:], 
 hphi = lambda i, j, value: ((a*phi(i, j) + value) % p)
 
 class ElasticHashtable:
-    def __init__(self, n, delta, c=1.0):
+    def __init__(self, n, delta, c=2.0):
         self.n = n
         self.delta = delta
         self.batch_no = 0
@@ -102,6 +102,7 @@ class ElasticHashtable:
                     table2.insert(slot, value)
                     return (batch_no, slot, j+self.f(e1))
                 j += 1
+
         elif e1 <= self.delta / 2:
             # Do table 2
             j = 1
@@ -111,6 +112,7 @@ class ElasticHashtable:
                     table2.insert(slot, value)
                     return (batch_no, slot, j)
                 j += 1
+
         else: # e2 <= 0.25
             # Do table 1
             j = 1

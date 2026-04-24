@@ -5,7 +5,7 @@ from random import sample, randint
 import csv
 import tqdm
 
-def run_test(insert, search, n, values, num_searches=40000):
+def run_test(insert, search, n, values):
     average_insertion_probes = 0
     insertion_count = 0
 
@@ -19,11 +19,9 @@ def run_test(insert, search, n, values, num_searches=40000):
     average_search_probes = 0
 
     search_count = 0
-    for i in range(num_searches):
-        num = values[randint(0, len(values)-1)]
-        res = search(num)
+    for i in values:
+        res = search(i)
         idx = res[4] if isinstance(res, tuple) else res
-        #print(f"Found {val} at table {i}, slot {slot}, in {idx+1} probes")
         average_search_probes += idx
         search_count += 1
 
@@ -33,12 +31,12 @@ def run_test(insert, search, n, values, num_searches=40000):
 
 
 if __name__ == "__main__":
-    n = 2**13
+    n = 2**14
     rows = []
-    for k in tqdm.tqdm(range(2, 23), desc="Deltas", position=0):
+    for k in tqdm.tqdm(range(1, 10), desc="Deltas", position=0):
         averages = [0, 0, 0, 0]
+        delta = 2**(-k)
         for i in tqdm.tqdm(range(5), desc="Inner Samples", position=1, leave=False):
-            delta = 1.3**(-k)
             values = sample(range(n * 100), int(n * (1-delta)))
             eht = elastic.ElasticHashtable(n, delta)
             nht = naive.NaiveHashtable(n, delta)
@@ -49,6 +47,7 @@ if __name__ == "__main__":
             averages[2] += n_insert
             averages[3] += n_search
         rows.append([delta, averages[0]/5, averages[1]/5, averages[2]/5, averages[3]/5])
+        #tqdm.write(rows[-1])
     
     with open("results.csv", "w", newline="") as f:
         writer = csv.writer(f)

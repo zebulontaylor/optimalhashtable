@@ -37,3 +37,7 @@ The main part of the file, `ElasticHashtable` implements the core of the algorit
 3. Else, (if the second table is very full and the first isn't), just insert to the first table. (This can be expensive but is *very* rare.)
 
 `search` iterates through the sorted `valid_probes` until it finds the desired value.
+
+## Findings
+
+![graph](graph.png)
